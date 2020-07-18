@@ -8,16 +8,16 @@ class Logger:
         self.direct = direct_output
 
     def __send(self, clr, p, m, a=None):
-        os.system("logger -p {p} -t automation:{s} \"{m}\"".format(p=p, s=self.subtag, m=m))
+        os.system("logger -p {p} -t aura:{s} \"{m}\"".format(p=p, s=self.subtag, m=m))
         if a is not None:
-            os.system("logger -p {p} -t automation:{s} \"{m}\"".format(p=p, s=self.subtag, m=a))
+            os.system("logger -p {p} -t aura:{s} \"{m}\"".format(p=p, s=self.subtag, m=a))
         if self.direct:
             try:
                 print("\x1b[1;{clr}m{s} | {m}\x1b[0m".format(clr=clr, s=self.subtag, m=m))
                 if a is not None:
                     print("\x1b[{clr}m{m}\x1b[0m".format(clr=clr, m=a))
             except IOError:
-                os.system("logger -p 4 -t automation:Logger \"IO Error happened during output\"")
+                os.system("logger -p 4 -t aura:Logger \"IO Error happened during output\"")
 
     def log(self, *args):
         message = " ".join(map(lambda x: str(x), args))
