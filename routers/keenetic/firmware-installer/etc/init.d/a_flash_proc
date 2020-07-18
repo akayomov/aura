@@ -170,7 +170,7 @@ if [ "$start_step" -lt "4" ]; then
 		exit 1
 	fi
 
-	branch=$(cat /storage/automation.branch 2>&1)
+	branch=$(cat /storage/aura.branch 2>&1)
 	branch_status=$?
 	if [ $branch_status -eq "0" ]; then
 		sleep 1 & logger -p 4 -t flash "|    >> Switching branch to $branch"
@@ -189,7 +189,7 @@ if [ "$start_step" -lt "4" ]; then
 	sleep 1 & logger -t flash 'DONE: GIT installed and configured'
 fi
 
-############################################### 5 CONFIGURING AUTOMATION ###############################################
+############################################### 5 CONFIGURING AURA ###############################################
 sleep 5
 if [ "$start_step" -lt "5" ]; then
 	sleep 1 & logger -t flash 'STEP: Preparing AURA to work'
