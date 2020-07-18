@@ -66,6 +66,7 @@ class StatusCollector:
             ports = list(filter(lambda l: l[6] != "-", ports))
 
             result['ssh'] = len(list(filter(lambda l: l[6].split("/")[1] == "dropbear", ports))) > 0
+            map(lambda l: self.__logger.log(l[6].split("/")[1] == "pure-ftpd (SERV", l[6].split("/")[1]), ports)
             result['ftp'] = len(list(filter(lambda l: l[6].split("/")[1] == "pure-ftpd (SERV", ports))) > 0
 
             fstats = list(map(lambda line: " ".join(line.split()).split(" "), self.__top.cli("df -h").split("\n")))
