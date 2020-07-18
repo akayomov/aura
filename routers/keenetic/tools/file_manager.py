@@ -18,7 +18,7 @@ class FileManager:
         self.__logger.log('Initialized')
 
     def get_config(self, file: str) -> (dict, list):
-        path = os.path.abspath(os.path.join('storage', file))
+        path = os.path.abspath(os.path.join('/storage', file))
         self.__logger.log('Getting config file:', path)
         if os.path.exists(path) and os.path.isfile(path):
             modified = os.path.getmtime(path)
@@ -72,14 +72,14 @@ class FileManager:
             self.__logger.log('  checking directory item:', file)
             file_path = os.path.abspath(os.path.join(dir_path, file))
             
-            if os.path.isfile(file_path) and int(file.split('.')[0]) >= low_file_num and ((to_timestamp is -1) or
+            if os.path.isfile(file_path) and int(file.split('.')[0]) >= low_file_num and ((to_timestamp == -1) or
                     (to_timestamp is None and int(file.split('.')[0]) < low_file_num + 1) or
                     (int(file.split('.')[0]) < int(str(int(to_timestamp))[-5:]))):
                 self.__logger.log('  matching the terms')
                 for line in open(file_path, 'r', errors='strict'):
                     splitter = line.split("|")
                     self.__logger.log('    reading line:', splitter[0])
-                    if (int(splitter[0]) >= low_marker_num) and ((to_timestamp is -1) or
+                    if (int(splitter[0]) >= low_marker_num) and ((to_timestamp == -1) or
                             (to_timestamp is None and int(splitter[0]) < low_file_num + 1) or
                             (int(splitter[0]) < int(str(int(to_timestamp))[-5:]))):
                         status = "|".join("\n".join(json.dumps(splitter[1]).split("$newline$")).split("$marker$"))
