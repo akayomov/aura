@@ -48,7 +48,7 @@ class RouterAccess:
             return response
 
     def cli(self, command: str):
-        self.__logger.log('Request to RCI:', command)
+        self.__logger.log('Request to CLI:', command)
         if command in self.__cli_cache:
             self.__logger.log('  found in cache')
             return self.__cli_cache[command]
