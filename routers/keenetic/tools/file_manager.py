@@ -45,7 +45,7 @@ class FileManager:
             return None
 
     def put_config(self, file: str, data: object):
-        path = os.path.abspath(os.path.join('storage', file))
+        path = os.path.abspath(os.path.join('/storage', file))
         self.__logger.log('Putting config file:', path)
         err = None
         for iteration in range(1, 6):
