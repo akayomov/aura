@@ -13,12 +13,12 @@ import os
 
 
 class StatusCollector:
-    def __init__(self, output):
+    def __init__(self, output=False):
         self.__logger = Logger("StatusCollector", output)
-        self.__logger.log('Initialized')
         self.__top = RouterAccess(output)
         self.__file = FileManager(output)
         self.__output = output
+        self.__logger.log('Initialized', self)
 
     def collect(self, sections: list, current_time: float) -> dict:
         self.__logger.log('Status collect at \'', current_time, '\' for:', sections)

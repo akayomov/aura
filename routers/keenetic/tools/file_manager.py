@@ -5,17 +5,18 @@ import os
 
 
 class FileManager:
-    _instance = None
+    __logger = None
+    __cache = None
 
     def __new__(cls, *args, **kwargs):
-        if not FileManager._instance:
-            FileManager._instance = super(FileManager, cls).__new__(cls)
-        return FileManager._instance
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(FileManager, cls).__new__(cls)
+        return cls.instance
 
-    def __init__(self, output):
-        self.__logger = Logger("FileManager", output)
-        self.__cache = {}
-        self.__logger.log('Initialized')
+    def __init__(self, output=False):
+        if self.__logger is None: self.__logger = Logger("FileManager", output)
+        if self.__cache is None: self.__cache = {}
+        self.__logger.log('Initialized', self)
 
     def get_config(self, file: str) -> (dict, list):
         path = os.path.abspath(os.path.join('/storage', file))

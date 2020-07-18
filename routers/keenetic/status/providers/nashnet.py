@@ -5,9 +5,8 @@ from ...tools.logger import Logger
 
 
 class NashnetISPParser(HTMLParser):
-    def __init__(self, username, password, output):
+    def __init__(self, username, password, output=True):
         self.__logger = Logger("NashnetISPParser", output)
-        self.__logger.log("Initialized")
         super(NashnetISPParser, self).__init__()
         self.data = {"name": "nashnet"}
         url = "https://my.nashnet.ua/index.php?mod=profile"
@@ -28,6 +27,7 @@ class NashnetISPParser(HTMLParser):
         except HTTPError as e:
             self.__logger.warnerr(e)
             self.data["error"] = "http"
+        self.__logger.log("Initialized", self)
 
     def error(self, message):
         self.__logger.warn("NashnetISPParser error:", message)

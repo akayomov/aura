@@ -1,7 +1,12 @@
+from .backend.handler import RequestsHandler
+from .backend.static import StaticFilesHandler
+
 from .status.collector import StatusCollector
 from .status.cli_designer import CLIDesigner
+
 from .tools.file_manager import FileManager
 from .tools.logger import Logger
+
 import time
 import sys
 
@@ -24,8 +29,11 @@ if provide_output is not None:
     logger = Logger(direct_output=provide_output)
     logger.log("Starting AURA service loop:", arguments)
 
-    manager = FileManager(True)
-    collector = StatusCollector(True)
+    manager = FileManager(provide_output)
+    collector = StatusCollector(provide_output)
+    handler = RequestsHandler(provide_output)
+    StaticFilesHandler(provide_output)
+    handler.start_loop()
 
     DELAY = 60  # seconds
 

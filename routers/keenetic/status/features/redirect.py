@@ -3,7 +3,7 @@ from ...tools.router_access import RouterAccess
 
 
 class RedirectChecker:
-    def __init__(self, config, output):
+    def __init__(self, config, output=True):
         self.__logger = Logger("RedirectChecker", output)
         self.__logger.log("Checking redirect feature", config)
         self.__top = RouterAccess(output)

@@ -6,18 +6,20 @@ import time
 
 
 class RouterAccess:
-    _instance = None
+    __logger = None
+    __rci_cache = None
+    __cli_cache = None
 
     def __new__(cls, *args, **kwargs):
-        if not RouterAccess._instance:
-            RouterAccess._instance = super(RouterAccess, cls).__new__(cls)
-        return RouterAccess._instance
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(RouterAccess, cls).__new__(cls)
+        return cls.instance
 
-    def __init__(self, output):
-        self.__logger = Logger("RouterAccess", output)
-        self.__rci_cache = {}
-        self.__cli_cache = {}
-        self.__logger.log('Initialized')
+    def __init__(self, output=False):
+        if self.__logger is None: self.__logger = Logger("RouterAccess", output)
+        if self.__rci_cache is None: self.__rci_cache = {}
+        if self.__cli_cache is None: self.__cli_cache = {}
+        self.__logger.log('Initialized', self)
 
     def clear_cache(self):
         self.__rci_cache = {}

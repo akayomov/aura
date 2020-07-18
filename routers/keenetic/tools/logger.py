@@ -29,6 +29,7 @@ class Logger:
 
     def warnerr(self, e: Exception):
         try:
+            if e.errno is None or e.strerror is None: raise AttributeError()
             message = "Exception {}: <{}>".format(str(e.errno), e.strerror)
         except AttributeError:
             message = "Exception: <{}>".format(str(e))

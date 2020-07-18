@@ -4,9 +4,8 @@ from ...tools.logger import Logger
 
 
 class CrystalISPParser:
-    def __init__(self, username, password, output):
+    def __init__(self, username, password, output=True):
         self.__logger = Logger("CrystalISPParser", output)
-        self.__logger.log("Initialized")
         self.data = {"name": "crystal"}
         try:
             auth = requests.post("https://api.prosto.net/auth", json={
@@ -29,3 +28,4 @@ class CrystalISPParser:
         except HTTPError as e:
             self.__logger.warnerr(e)
             self.data["error"] = "http"
+        self.__logger.log("Initialized", self)

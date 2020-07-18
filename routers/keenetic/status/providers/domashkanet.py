@@ -5,9 +5,8 @@ from ...tools.logger import Logger
 
 
 class DomashkaISPParser(HTMLParser):
-    def __init__(self, username, password, output):
+    def __init__(self, username, password, output=True):
         self.__logger = Logger("DomashkaISPParser", output)
-        self.__logger.log("Initialized")
         super(DomashkaISPParser, self).__init__(convert_charrefs=True)
         self.data = {"name": "domashkanet"}
         try:
@@ -26,6 +25,7 @@ class DomashkaISPParser(HTMLParser):
         except HTTPError as e:
             self.__logger.warnerr(e)
             self.data["error"] = "http"
+        self.__logger.log("Initialized", self)
 
     def error(self, message):
         self.__logger.warn("DomashkaISPParser error:", message)
