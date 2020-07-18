@@ -1,0 +1,282 @@
+#!/opt/bin/sh
+
+export REPOSITORY_URL="git://github.com/akayomov/aura.git"
+export REPOSITORY_DIR="/opt/aura"
+
+export PATH=/opt/sbin:/opt/bin:$PATH
+export LANG="ru_RU.UTF-8"
+export LC_ALL="ru_RU.UTF-8"
+export HOME=/opt/root
+unset LD_LIBRARY_PATH
+unset LD_PRELOAD
+unset LD_BIND_NOW
+unset TZ
+
+INSTALL_STEP="/opt/etc/flash_done_step"
+FLASH_FILE=$0
+
+if [ -f $INSTALL_STEP ]; then
+	start_step="$(cut -d' ' -f1 $INSTALL_STEP)"
+else
+	echo "0 initiating" > $INSTALL_STEP
+	start_step="0"
+fi
+
+############################################### 0 FUNCTIONS ############################################################
+
+update_packages(){
+	sleep 1 & logger -t flash "|    >> Updating OPKG"
+
+	update_log="$(opkg update 2>&1)"
+	update_status=$?
+
+	if [ $update_status -eq "0" ]; then
+		sleep 1 & logger -t flash "|    >> OPKG updated successfully"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> OPKG update failed"
+		sleep 1 & logger -p 3 -t flash "log: $update_log"
+		exit 1
+	fi
+}
+
+install_package(){
+	sleep 1 & logger -t flash "|    >> Installing '$1' package"
+
+	holder.sh "Package '$1' installation continues" &
+	holder_pid=$!
+
+	install_log=$(opkg -V2 install "$1")
+	install_status=$?
+
+	if [ $install_status -eq "0" ]; then
+		sleep 1 & logger -t flash "|    >> Installation succeeded for: $1"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> Installation failed for: $1"
+		sleep 1 & logger -p 3 -t flash "log: $install_log"
+		kill $holder_pid
+		exit 1
+	fi
+
+	kill $holder_pid
+}
+
+############################################### 1 PREPARING DIRECTORIES ################################################
+if [ "$start_step" -lt "1" ]; then
+	sleep 1 & logger -t flash 'STEP: Preparing directories'
+
+	for folder in lib/opkg tmp var/lock root/.ssh etc/init.d; do
+		if mkdir -p /opt/$folder ; then
+			sleep 1 & logger -t flash "|    >> Creation succeeded for: /opt/$folder"
+		else
+			sleep 1 & logger -p 3 -t flash "|    >> Creation failed for: /opt/$folder"
+			exit 1
+		fi
+	done
+
+	echo "1 step_directories" > $INSTALL_STEP
+	sleep 1 & logger -t flash 'DONE: Directories created'
+fi
+
+############################################### 2 INSTALLING PACKAGES ##################################################
+sleep 5
+if [ "$start_step" -lt "2" ]; then
+	sleep 1 & logger -t flash 'STEP: Installing initial packages'
+
+	update_packages
+	for package in opt-ndmsv2 ndmq entware-release findutils poorbox busybox; do install_package $package; done
+
+	if ldconfig > /dev/null 2>&1 ; then
+		sleep 1 & logger -t flash "|    >> LDCONFIG executed successfully"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> LDCONFIG execution failed"
+		exit 1
+	fi
+
+	chmod 777 /opt/tmp
+
+	echo "2 step_packages" > $INSTALL_STEP
+	sleep 1 & logger -t flash 'DONE: Base packages installed'
+fi
+
+############################################### 3 CONFIGURING SSH ACCESS ###############################################
+sleep 5
+if [ "$start_step" -lt "3" ]; then
+	sleep 1 & logger -t flash 'STEP: Configuring SSH'
+
+	update_packages
+	install_package dropbear
+
+	holder.sh "Generating dropbear RSA-KEY" &
+	holder_pid=$!
+	if dropbearkey -t rsa -f /opt/root/.ssh/id_dropbear > /dev/null 2>&1; then
+		sleep 1 & logger -t flash "|    >> Dropbear RSA-KEY generated successfully"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> Dropbear RSA-KEY generation failed"
+		kill $holder_pid
+		exit 1
+	fi
+	kill $holder_pid
+
+	password=$(cat /storage/root.password)
+	password_status=$?
+
+	if [ $password_status -eq "0" ]; then
+		sleep 1 & logger -p 4 -t flash "|    >> Password for ROOT will be set from /storage/root.password file"
+	else
+		sleep 1 & logger -p 4 -t flash "|    >> File /storage/root.password is missing. ROOT will go unsecured with default password 'keenetic'"
+		password="keenetic"
+	fi
+
+	# shellcheck disable=SC2039
+	echo -e "$password\n$password" | passwd root
+
+	if /opt/etc/init.d/S51dropbear stop & /opt/etc/init.d/S51dropbear start ; then
+		sleep 1 & logger -t flash "|    >> Dropbear service (re)started successfully"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> Dropbear service (re)start failed"
+		exit 1
+	fi
+
+	echo "3 step_dropbear" > $INSTALL_STEP
+	sleep 1 & logger -t flash 'DONE: SSH installed and configured'
+fi
+
+############################################### 4 CONFIGURING GIT REPOSITORY ###########################################
+sleep 5
+if [ "$start_step" -lt "4" ]; then
+	sleep 1 & logger -t flash 'STEP: Installing GIT'
+
+	update_packages
+	install_package git
+
+	if [ -d "$REPOSITORY_DIR" ]; then
+		sleep 1 & logger -t flash "|    >> Cleanup existing repo directory"
+		chown -R root:root $REPOSITORY_DIR
+		chmod -R uog+rwx $REPOSITORY_DIR
+		rm -rf $REPOSITORY_DIR
+	fi
+
+	holder.sh "Cloning repository" &
+	holder_pid=$!
+	clone_log=$(cd /opt && git clone $REPOSITORY_URL)
+	clone_status=$?
+
+	if [ $clone_status -eq "0" ]; then
+		sleep 1 & logger -t flash "|    >> Repository cloned successfully"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> Repository cloning failed"
+		sleep 1 & logger -p 3 -t flash "log: $clone_log"
+		kill $holder_pid
+		exit 1
+	fi
+
+	branch=$(cat /storage/automation.branch 2>&1)
+	branch_status=$?
+	if [ $branch_status -eq "0" ]; then
+		sleep 1 & logger -p 4 -t flash "|    >> Switching branch to $branch"
+		switch_log=$(cd $REPOSITORY_DIR && git switch "$branch" 2>&1)
+		switch_status=$?
+		if [ $switch_status -eq "0" ]; then
+			sleep 1 & logger -t flash "|    >> Switched successfully"
+		else
+			sleep 1 & logger -p 3 -t flash "|    >> Switch to branch $branch failed"
+			sleep 1 & logger -p 3 -t flash "log: $switch_log"
+		fi
+	fi
+	kill $holder_pid
+
+	echo "4 step_repository" > $INSTALL_STEP
+	sleep 1 & logger -t flash 'DONE: GIT installed and configured'
+fi
+
+############################################### 5 CONFIGURING AUTOMATION ###############################################
+sleep 5
+if [ "$start_step" -lt "5" ]; then
+	sleep 1 & logger -t flash 'STEP: Preparing AURA to work'
+
+	update_packages
+	install_package python3 python3-requests
+
+	cat <<'EOF' >>/opt/etc/init.d/S100AURA
+#!/bin/sh
+PATH=/opt/bin:/opt/sbin:/sbin:/bin:/usr/sbin:/usr/bin
+PID=/opt/tmp/aura.pid
+APP=/opt/aura/entrypoint.py
+
+aura_status() {
+	[ -f $PID ] && [ -d /proc/`cat $PID` ]
+}
+
+start() {
+	python3 $APP --pid $PID --service
+}
+
+stop() {
+	kill `cat $PID`
+}
+
+case "$1" in
+	start)
+		if aura_status; then
+			echo "AURA already running"
+		else
+			start
+		fi
+		;;
+	stop)
+		if aura_status; then
+			stop
+		else
+			echo "AURA is not running"
+		fi
+		;;
+	status)
+		if aura_status; then
+			echo "AURA is running"
+		else
+			echo "AURA isn't running"
+		fi
+		;;
+	restart)
+		stop
+		sleep 3
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|status}"
+		;;
+esac
+EOF
+	chmod +x /opt/etc/init.d/S100AURA
+
+	if /opt/etc/init.d/S100AURA start; then
+		sleep 1 & logger -t flash "|    >> AURA service (re)started successfully"
+	else
+		sleep 1 & logger -p 3 -t flash "|    >> AURA service (re)start failed"
+		exit 1
+	fi
+
+	echo "5 step_aura" > $INSTALL_STEP
+	sleep 1 & logger -t flash 'DONE: AURA is up and running'
+fi
+
+############################################### 6 FINAL ADJUST AND CLEANUP #############################################
+sleep 5
+if [ "$start_step" -lt "6" ]; then
+	sleep 1 & logger -t flash 'STEP: Final adjust and cleanup'
+
+	update_packages
+	install_package nano tmux
+
+	new_profile=$(sed "s/alias mc=.*/alias ll=\"echo -e '\\\\e[1;4mRights          User     Group       Size  Date  Time    Name\\\\e[0m' \&\& ls -lAhpX --group-directories-first\"/g" /opt/etc/profile)
+	echo "$new_profile" > /opt/etc/profile
+
+	echo "alias status='python3 $REPOSITORY_DIR/entrypoint.py --status'" >> /opt/etc/profile
+
+	sleep 1 & logger -t flash "|    >> Remove installation scripts"
+	rm /opt/bin/holder.sh
+	rm $INSTALL_STEP
+	rm "$FLASH_FILE"
+	sleep 1 & logger -t flash 'FINALLY EVERYTHING IS UP AND RUNNING. BYE BYE'
+	exit 0
+fi
