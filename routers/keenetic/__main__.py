@@ -1,5 +1,6 @@
 from .backend.handler import RequestsHandler
 from .backend.static import StaticFilesHandler
+from .backend.processor import RequestsProcessor
 
 from .status.collector import StatusCollector
 from .status.cli_designer import CLIDesigner
@@ -33,6 +34,7 @@ if provide_output is not None:
     collector = StatusCollector(provide_output)
     handler = RequestsHandler(provide_output)
     StaticFilesHandler(provide_output)
+    processor = RequestsProcessor(provide_output)
     handler.start_loop()
 
     DELAY = 60  # seconds
@@ -50,6 +52,8 @@ if provide_output is not None:
     MAX_LIST = ['provider']
 
     last_collect = time.time()
+    FULL_LIST = ['system', 'internet', 'tunnels', 'features', 'devices', 'provider']
+    processor.update_status(collector.collect(FULL_LIST, last_collect))
 
     while True:
         try:
@@ -69,7 +73,9 @@ if provide_output is not None:
                 if max_status >= MAX_TIMES:
                     check_status.extend(MAX_LIST)
                     max_status = 0
-                manager.put_status(current_time, collector.collect(check_status, current_time))
+                status_update = collector.collect(check_status, current_time)
+                processor.update_status(status_update)
+                manager.put_status(current_time, status_update)
             time.sleep(0.5)
         except Exception as e:
             logger.error(e)

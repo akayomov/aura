@@ -9,6 +9,9 @@ class StaticFilesHandler:
         handler = RequestsHandler()
         handler.add("GET", '/', self.__index)
         handler.add("GET", '/favicon.ico', self.__favicon)
+        handler.add("GET", '/code.js', self.__code)
+        handler.add("GET", '/resources/default_normal.ttf', self.__fonts)
+        handler.add("GET", '/resources/default_italic.ttf', self.__fonts)
         self.__logger.log('initialized')
 
     @staticmethod
@@ -27,4 +30,16 @@ class StaticFilesHandler:
         self.__logger.log('__favicon')
         self.__headers('image/x-icon', intent)
         path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'resources', 'favicon.ico'))
+        intent.wfile.write(open(path, 'rb').read())
+
+    def __code(self, intent):
+        self.__logger.log('__code')
+        self.__headers('application/javascript', intent)
+        path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'build', 'code.js'))
+        intent.wfile.write(open(path, 'rb').read())
+
+    def __fonts(self, intent):
+        self.__logger.log('__fonts')
+        self.__headers('font/ttf', intent)
+        path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', intent.path[1:]))
         intent.wfile.write(open(path, 'rb').read())
