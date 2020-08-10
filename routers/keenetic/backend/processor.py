@@ -38,7 +38,7 @@ class RequestsProcessor:
 
     def __known_devices(self, intent):
         self.__logger.log('__known_devices')
-        path = os.path.abspath(os.path.join('storage', 'known.devices'))
+        path = os.path.abspath(os.path.join('/', 'storage', 'known.devices'))
         if os.path.exists(path):
             self.__headers(intent, status=200)
             intent.wfile.write(open(path, 'rb').read())
@@ -48,7 +48,7 @@ class RequestsProcessor:
 
     def __routers_near(self, intent):
         self.__logger.log('__routers_near')
-        path = os.path.abspath(os.path.join('storage', 'routers.near'))
+        path = os.path.abspath(os.path.join('/', 'storage', 'routers.near'))
         if os.path.exists(path):
             self.__headers(intent, status=200)
             intent.wfile.write(open(path, 'rb').read())
